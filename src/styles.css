@@ -2597,15 +2597,13 @@ h1 {
   display: block;
   max-width: 100%;
   text-align: center;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+
   line-height: 1.15;
 }
 
 .item-code-tile .item-meta-badge {
   position: absolute;
-  top: 0;
+  top: -10px;
   right: 0;
   margin: 0;
   min-width: 38px;
@@ -2632,8 +2630,7 @@ h1 {
   margin-top: 6px;
   padding-top: 7px;
   border-top: 1px solid var(--line);
-  /* display: grid; */
-  /* grid-template-columns: minmax(0, 1fr) 30px; */
+
   align-items: center;
   gap: 7px;
 }
@@ -3082,4 +3079,50 @@ h1 {
   to {
     transform: rotate(360deg);
   }
+}
+
+/* Item code text full show - no ... */
+.item-code-tile {
+  min-height: 74px;
+  padding: 12px 10px;
+  overflow: visible;
+}
+
+.item-tile-main {
+  width: 100%;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  overflow: visible;
+}
+
+.item-code-tile strong,
+.item-tile-main strong {
+  width: 100%;
+  max-width: 100%;
+  display: block;
+  padding: 0 6px;
+  white-space: normal !important;
+  overflow: visible !important;
+  text-overflow: clip !important;
+  word-break: normal;
+  overflow-wrap: anywhere;
+  line-height: 1.25;
+  text-align: center;
+  font-size: 14px;
+}
+
+.item-meta-badge {
+  top: 7px;
+  right: 8px;
+  font-size: 10px;
+  padding: 4px 6px;
+}
+
+/* Selected item me height thodi proper */
+.item-code-tile.selected.expanded {
+  min-height: 128px;
 }
