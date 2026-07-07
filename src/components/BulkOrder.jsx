@@ -16,6 +16,7 @@ import {
   XCircle,
 } from "lucide-react";
 import {
+  bookBulkOrder,
   buildBulkOrderWhatsAppLink,
   checkBulkStock,
   getBulkCatalog,
@@ -314,7 +315,7 @@ function buildCsv(results = []) {
     .join("\n");
 }
 
-export default function BulkOrder({ onFastCheck }) {
+export default function BulkOrder({ onFastCheck, authUser }) {
   const [catalog, setCatalog] = useState(emptyCatalog());
   const [catalogLoading, setCatalogLoading] = useState(true);
   const [activeCategoryId, setActiveCategoryId] = useState("louvers");
@@ -328,6 +329,8 @@ export default function BulkOrder({ onFastCheck }) {
   const [error, setError] = useState("");
   const [mobileCartOpen, setMobileCartOpen] = useState(false);
   const [cartPreviewOpen, setCartPreviewOpen] = useState(false);
+  const [transportName, setTransportName] = useState("");
+  const [orderSaving, setOrderSaving] = useState(false);
   const resultsRef = useRef(null);
 
   useEffect(() => {
@@ -482,6 +485,7 @@ export default function BulkOrder({ onFastCheck }) {
     setResults(null);
     setReviewMode(false);
     setCartPreviewOpen(false);
+    setTransportName("");
   }
 
   function selectGroup(groupKey) {
@@ -489,6 +493,7 @@ export default function BulkOrder({ onFastCheck }) {
     setSearch("");
     setResults(null);
     setCartPreviewOpen(false);
+    setTransportName("");
   }
 
   function resetBulk() {
@@ -499,6 +504,7 @@ export default function BulkOrder({ onFastCheck }) {
     setError("");
     setMobileCartOpen(false);
     setCartPreviewOpen(false);
+    setTransportName("");
   }
 
   function addItem(item) {
@@ -627,9 +633,60 @@ export default function BulkOrder({ onFastCheck }) {
     URL.revokeObjectURL(url);
   }
 
+  async function sendBulkOrder() {
+    if (!cart.length || !resultItems.length) return;
+    const cleanTransport = transportName.trim();
+    if (cleanTransport.length < 2) {
+      setError("Please enter transport name before sending order.");
+      setTimeout(
+        () =>
+          resultsRef.current?.scrollIntoView({
+            behavior: "smooth",
+            block: "start",
+          }),
+        50,
+      );
+      return;
+    }
+
+    setOrderSaving(true);
+    setError("");
+
+    try {
+      const response = await bookBulkOrder({
+        items: cart,
+        results: resultItems,
+        transportName: cleanTransport,
+      });
+
+      if (response?.whatsappLink) {
+        window.open(response.whatsappLink, "_blank", "noopener,noreferrer");
+      } else {
+        window.open(
+          buildBulkOrderWhatsAppLink({
+            items: cart,
+            results: resultItems,
+            user: authUser,
+            transportName: cleanTransport,
+          }),
+          "_blank",
+          "noopener,noreferrer",
+        );
+      }
+    } catch (err) {
+      setError(
+        "Order could not be saved. Please check backend connection and try again.",
+      );
+    } finally {
+      setOrderSaving(false);
+    }
+  }
+
   const whatsappLink = buildBulkOrderWhatsAppLink({
     items: cart,
     results: resultItems,
+    user: authUser,
+    transportName,
   });
 
   if (catalogLoading) {
@@ -1101,10 +1158,10 @@ export default function BulkOrder({ onFastCheck }) {
           <div className="result-title-row">
             <div>
               <h3>Stock Check Results</h3>
-              <p>
+              {/* <p>
                 Available items left side me, not available / short stock right
                 side me.
-              </p>
+              </p> */}
             </div>
             <span>Just now</span>
           </div>
@@ -1160,6 +1217,18 @@ export default function BulkOrder({ onFastCheck }) {
             </div>
           </div>
 
+          <div className="transport-order-box">
+            <label>
+              <span>Transport Name</span>
+              <input
+                value={transportName}
+                onChange={(event) => setTransportName(event.target.value)}
+                placeholder="Enter transport name"
+              />
+            </label>
+            {/* <p>Client name will be saved automatically as {authUser?.name || "logged-in user"}.</p> */}
+          </div>
+
           <div className="result-actions">
             <button
               type="button"
@@ -1168,14 +1237,19 @@ export default function BulkOrder({ onFastCheck }) {
             >
               <Download size={17} /> Download Report
             </button>
-            <a
+            <button
               className="send-order-btn"
-              href={whatsappLink}
-              target="_blank"
-              rel="noreferrer"
+              type="button"
+              disabled={orderSaving || !transportName.trim()}
+              onClick={sendBulkOrder}
             >
-              <MessageCircle size={18} /> Send Order via WhatsApp
-            </a>
+              {orderSaving ? (
+                <Loader2 className="spin" size={18} />
+              ) : (
+                <MessageCircle size={18} />
+              )}
+              Save & Send Order via WhatsApp
+            </button>
           </div>
         </section>
       )}

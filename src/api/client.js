@@ -1,6 +1,32 @@
 const API_BASE_URL = import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
 const HELPDESK_WHATSAPP = import.meta.env.VITE_HELPDESK_WHATSAPP || import.meta.env.VITE_SALESPERSON_WHATSAPP || '917623853955';
 const SALESPERSON_WHATSAPP = import.meta.env.VITE_SALESPERSON_WHATSAPP || HELPDESK_WHATSAPP;
+const AUTH_KEY = 'stockfinder_auth';
+
+
+export function getStoredAuth() {
+  try {
+    return JSON.parse(localStorage.getItem(AUTH_KEY) || 'null');
+  } catch (error) {
+    return null;
+  }
+}
+
+export function getCurrentUser() {
+  return getStoredAuth()?.user || null;
+}
+
+export function getAuthToken() {
+  return getStoredAuth()?.token || '';
+}
+
+export function setStoredAuth(auth) {
+  localStorage.setItem(AUTH_KEY, JSON.stringify(auth || {}));
+}
+
+export function clearStoredAuth() {
+  localStorage.removeItem(AUTH_KEY);
+}
 
 export const PRODUCT_CATEGORIES = [
   { id: 'louvers', label: 'Louvers', companyName: 'Orange Profile', categoryName: 'Louvers', hasBatches: true },
@@ -34,6 +60,7 @@ async function requestJson(path, options = {}) {
     headers: {
       'Content-Type': 'application/json',
       'x-session-id': getSessionId(),
+      ...(getAuthToken() ? { Authorization: `Bearer ${getAuthToken()}` } : {}),
       ...(options.headers || {}),
     },
   });
@@ -53,8 +80,80 @@ async function postJson(path, payload) {
   });
 }
 
+
+export async function loginUser({ username, password }) {
+  const response = await requestJson('/api/auth/login', {
+    method: 'POST',
+    body: JSON.stringify({ username, password }),
+  });
+  if (response?.token) setStoredAuth({ token: response.token, user: response.user });
+  return response;
+}
+
+export async function fetchCurrentUser() {
+  const response = await requestJson('/api/auth/me');
+  if (response?.user) {
+    setStoredAuth({ token: getAuthToken(), user: response.user });
+  }
+  return response;
+}
+
+export function logoutUser() {
+  clearStoredAuth();
+}
+
+function adminHeaders(adminKey) {
+  return { 'x-admin-key': String(adminKey || '') };
+}
+
+export async function listManagedUsers(adminKey) {
+  return requestJson('/api/admin/users', { headers: adminHeaders(adminKey) });
+}
+
+export async function createManagedUser(adminKey, payload) {
+  return requestJson('/api/admin/users', {
+    method: 'POST',
+    headers: adminHeaders(adminKey),
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function updateManagedUser(adminKey, userId, payload) {
+  return requestJson(`/api/admin/users/${userId}`, {
+    method: 'PUT',
+    headers: adminHeaders(adminKey),
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function deactivateManagedUser(adminKey, userId) {
+  return requestJson(`/api/admin/users/${userId}`, {
+    method: 'DELETE',
+    headers: adminHeaders(adminKey),
+  });
+}
+
+let bulkCatalogCache = null;
+let bulkCatalogPromise = null;
+
+export function preloadBulkCatalog() {
+  if (!bulkCatalogPromise) {
+    bulkCatalogPromise = requestJson('/api/chat/bulk-catalog')
+      .then((data) => {
+        bulkCatalogCache = data;
+        return data;
+      })
+      .catch((error) => {
+        bulkCatalogPromise = null;
+        throw error;
+      });
+  }
+  return bulkCatalogPromise;
+}
+
 export async function getBulkCatalog() {
-  return requestJson('/api/chat/bulk-catalog');
+  if (bulkCatalogCache) return bulkCatalogCache;
+  return preloadBulkCatalog();
 }
 
 export async function searchItems({ categoryId, categoryName, groupKey, query }) {
@@ -63,6 +162,10 @@ export async function searchItems({ categoryId, categoryName, groupKey, query })
 
 export async function checkBulkStock(items) {
   return postJson('/api/chat/check-bulk-stock', { items });
+}
+
+export async function bookBulkOrder({ items = [], results = [], transportName = '' } = {}) {
+  return postJson('/api/orders/bulk', { items, results, transportName });
 }
 
 function getPcsPerBox(productCode) {
@@ -152,11 +255,11 @@ export async function checkAvailability({ productCode, requestedQty, requestedUn
 export async function checkStockBatches(stockOrCode) {
   const payload = typeof stockOrCode === 'object' && stockOrCode !== null
     ? {
-        productCode: normalizeCode(stockOrCode.productCode),
-        companyName: stockOrCode.companyName || '',
-        categoryName: stockOrCode.categoryName || '',
-        godownName: stockOrCode.godownName || '',
-      }
+      productCode: normalizeCode(stockOrCode.productCode),
+      companyName: stockOrCode.companyName || '',
+      categoryName: stockOrCode.categoryName || '',
+      godownName: stockOrCode.godownName || '',
+    }
     : { productCode: normalizeCode(stockOrCode) };
 
   try {
@@ -182,10 +285,13 @@ export function buildHelpDeskLink(productCode = '') {
   return `https://wa.me/${HELPDESK_WHATSAPP}?text=${encodeURIComponent(text)}`;
 }
 
-export function buildBulkOrderWhatsAppLink({ items = [], results = [] } = {}) {
+export function buildBulkOrderWhatsAppLink({ items = [], results = [], user = getCurrentUser(), transportName = '' } = {}) {
   const checkedMap = new Map(results.map((item) => [item.productCode, item]));
   const lines = [
     'New Bulk Stock / Order Request',
+    '',
+    `Client: ${user?.name || 'Client'}`,
+    transportName ? `Transport: ${transportName}` : '',
     '',
     'Selected Items:',
   ];
@@ -198,5 +304,5 @@ export function buildBulkOrderWhatsAppLink({ items = [], results = [] } = {}) {
 
   lines.push('', 'Please contact me for order confirmation.');
 
-  return `https://wa.me/${SALESPERSON_WHATSAPP}?text=${encodeURIComponent(lines.join('\n'))}`;
+  return `https://wa.me/${SALESPERSON_WHATSAPP}?text=${encodeURIComponent(lines.filter(Boolean).join('\n'))}`;
 }
