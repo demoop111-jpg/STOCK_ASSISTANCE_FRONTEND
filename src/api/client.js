@@ -285,6 +285,13 @@ export function buildHelpDeskLink(productCode = '') {
   return `https://wa.me/${HELPDESK_WHATSAPP}?text=${encodeURIComponent(text)}`;
 }
 
+
+function getWhatsAppNumberForUser(user = getCurrentUser()) {
+  const digits = String(user?.salesPersonMobile || '').replace(/\D/g, '');
+  if (digits.length === 10) return `91${digits}`;
+  return digits || SALESPERSON_WHATSAPP;
+}
+
 export function buildBulkOrderWhatsAppLink({ items = [], results = [], user = getCurrentUser(), transportName = '' } = {}) {
   const checkedMap = new Map(results.map((item) => [item.productCode, item]));
   const lines = [
@@ -304,5 +311,5 @@ export function buildBulkOrderWhatsAppLink({ items = [], results = [], user = ge
 
   lines.push('', 'Please contact me for order confirmation.');
 
-  return `https://wa.me/${SALESPERSON_WHATSAPP}?text=${encodeURIComponent(lines.filter(Boolean).join('\n'))}`;
+  return `https://wa.me/${getWhatsAppNumberForUser(user)}?text=${encodeURIComponent(lines.filter(Boolean).join('\n'))}`;
 }

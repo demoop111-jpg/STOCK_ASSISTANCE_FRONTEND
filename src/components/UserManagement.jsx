@@ -1,37 +1,60 @@
-import { useEffect, useMemo, useState } from 'react';
-import { ArrowLeft, Eye, EyeOff, Loader2, Pencil, Plus, Save, Trash2, UsersRound } from 'lucide-react';
+import { useEffect, useMemo, useState } from "react";
+import {
+  ArrowLeft,
+  Eye,
+  EyeOff,
+  Loader2,
+  Pencil,
+  Plus,
+  Save,
+  Trash2,
+  UsersRound,
+} from "lucide-react";
 import {
   createManagedUser,
   deactivateManagedUser,
   listManagedUsers,
   updateManagedUser,
-} from '../api/client.js';
+} from "../api/client.js";
 
-const blankForm = { name: '', username: '', password: '', isActive: true };
+const blankForm = {
+  name: "",
+  username: "",
+  password: "",
+  salesPersonMobile: "",
+  isActive: true,
+};
 
 export default function UserManagement() {
-  const [adminKey, setAdminKey] = useState(sessionStorage.getItem('stockfinder_admin_key') || '');
-  const [keyAccepted, setKeyAccepted] = useState(Boolean(sessionStorage.getItem('stockfinder_admin_key')));
+  const [adminKey, setAdminKey] = useState(
+    sessionStorage.getItem("stockfinder_admin_key") || "",
+  );
+  const [keyAccepted, setKeyAccepted] = useState(
+    Boolean(sessionStorage.getItem("stockfinder_admin_key")),
+  );
   const [users, setUsers] = useState([]);
   const [form, setForm] = useState(blankForm);
-  const [editingId, setEditingId] = useState('');
-  const [message, setMessage] = useState('');
-  const [error, setError] = useState('');
+  const [editingId, setEditingId] = useState("");
+  const [message, setMessage] = useState("");
+  const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
-  const activeUsers = useMemo(() => users.filter((user) => user.isActive !== false).length, [users]);
+  const activeUsers = useMemo(
+    () => users.filter((user) => user.isActive !== false).length,
+    [users],
+  );
 
   async function loadUsers(key = adminKey) {
     setLoading(true);
-    setError('');
+    setError("");
     try {
       const response = await listManagedUsers(key);
       setUsers(response.users || []);
       setKeyAccepted(true);
-      sessionStorage.setItem('stockfinder_admin_key', key);
+      sessionStorage.setItem("stockfinder_admin_key", key);
     } catch (err) {
-      setError('Invalid admin key or backend connection failed.');
+      setError("Invalid admin key or backend connection failed.");
       setKeyAccepted(false);
     } finally {
       setLoading(false);
@@ -45,53 +68,61 @@ export default function UserManagement() {
 
   function resetForm() {
     setForm(blankForm);
-    setEditingId('');
+    setEditingId("");
     setShowPassword(false);
   }
 
   function editUser(user) {
     setEditingId(user.id);
-    setForm({ name: user.name, username: user.username, password: '', isActive: user.isActive !== false });
-    setMessage('');
-    setError('');
+    setForm({
+      name: user.name,
+      username: user.username,
+      password: "",
+      salesPersonMobile: user.salesPersonMobile || "",
+      isActive: user.isActive !== false,
+    });
+    setMessage("");
+    setError("");
   }
 
   async function submitUser(event) {
     event.preventDefault();
     setLoading(true);
-    setMessage('');
-    setError('');
+    setMessage("");
+    setError("");
 
     try {
       if (editingId) {
         const payload = { ...form };
         if (!payload.password) delete payload.password;
         await updateManagedUser(adminKey, editingId, payload);
-        setMessage('User updated successfully.');
+        setMessage("User updated successfully.");
       } else {
         await createManagedUser(adminKey, form);
-        setMessage('User created successfully.');
+        setMessage("User created successfully.");
       }
       resetForm();
       await loadUsers(adminKey);
     } catch (err) {
-      setError('User save failed. Please check name, username, password or duplicate username.');
+      setError(
+        "User save failed. Please check name, username, password or duplicate username.",
+      );
     } finally {
       setLoading(false);
     }
   }
 
   async function deactivateUser(userId) {
-    if (!confirm('Deactivate this user?')) return;
+    if (!confirm("Deactivate this user?")) return;
     setLoading(true);
-    setMessage('');
-    setError('');
+    setMessage("");
+    setError("");
     try {
       await deactivateManagedUser(adminKey, userId);
-      setMessage('User deactivated.');
+      setMessage("User deactivated.");
       await loadUsers(adminKey);
     } catch (err) {
-      setError('User deactivate failed.');
+      setError("User deactivate failed.");
     } finally {
       setLoading(false);
     }
@@ -125,7 +156,11 @@ export default function UserManagement() {
               placeholder="Enter admin key"
             />
             <button type="submit" disabled={loading || !adminKey}>
-              {loading ? <Loader2 className="spin" size={17} /> : <Save size={17} />}
+              {loading ? (
+                <Loader2 className="spin" size={17} />
+              ) : (
+                <Save size={17} />
+              )}
               Continue
             </button>
           </form>
@@ -145,7 +180,7 @@ export default function UserManagement() {
           <button
             className="ghost-management-btn"
             onClick={() => {
-              sessionStorage.removeItem('stockfinder_admin_key');
+              sessionStorage.removeItem("stockfinder_admin_key");
               setKeyAccepted(false);
             }}
           >
@@ -157,18 +192,22 @@ export default function UserManagement() {
           <UsersRound size={28} />
           <div>
             <h1>User Management</h1>
-            <p>{users.length} users • {activeUsers} active</p>
+            <p>
+              {users.length} users • {activeUsers} active
+            </p>
           </div>
         </div>
 
         <div className="management-grid">
           <form className="user-form" onSubmit={submitUser}>
-            <h2>{editingId ? 'Edit User' : 'Create New User'}</h2>
+            <h2>{editingId ? "Edit User" : "Create New User"}</h2>
             <label>
               <span>Client Name</span>
               <input
                 value={form.name}
-                onChange={(event) => setForm((prev) => ({ ...prev, name: event.target.value }))}
+                onChange={(event) =>
+                  setForm((prev) => ({ ...prev, name: event.target.value }))
+                }
                 placeholder="M M DECORE"
               />
             </label>
@@ -176,20 +215,44 @@ export default function UserManagement() {
               <span>Username</span>
               <input
                 value={form.username}
-                onChange={(event) => setForm((prev) => ({ ...prev, username: event.target.value }))}
+                onChange={(event) =>
+                  setForm((prev) => ({ ...prev, username: event.target.value }))
+                }
                 placeholder="mm_decore"
               />
             </label>
             <label>
-              <span>{editingId ? 'New Password (optional)' : 'Password'}</span>
+              <span>Sales Person Mobile</span>
+              <input
+                value={form.salesPersonMobile}
+                onChange={(event) =>
+                  setForm((prev) => ({
+                    ...prev,
+                    salesPersonMobile: event.target.value,
+                  }))
+                }
+                placeholder="9876543210"
+                inputMode="numeric"
+              />
+            </label>
+            <label>
+              <span>{editingId ? "New Password (optional)" : "Password"}</span>
               <div className="password-edit-row">
                 <input
                   value={form.password}
-                  onChange={(event) => setForm((prev) => ({ ...prev, password: event.target.value }))}
-                  type={showPassword ? 'text' : 'password'}
+                  onChange={(event) =>
+                    setForm((prev) => ({
+                      ...prev,
+                      password: event.target.value,
+                    }))
+                  }
+                  type={showPassword ? "text" : "password"}
                   placeholder="MMd@123"
                 />
-                <button type="button" onClick={() => setShowPassword((value) => !value)}>
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((value) => !value)}
+                >
                   {showPassword ? <EyeOff size={17} /> : <Eye size={17} />}
                 </button>
               </div>
@@ -198,17 +261,36 @@ export default function UserManagement() {
               <input
                 type="checkbox"
                 checked={form.isActive}
-                onChange={(event) => setForm((prev) => ({ ...prev, isActive: event.target.checked }))}
+                onChange={(event) =>
+                  setForm((prev) => ({
+                    ...prev,
+                    isActive: event.target.checked,
+                  }))
+                }
               />
               Active user
             </label>
 
             <div className="form-actions">
               <button type="submit" disabled={loading}>
-                {loading ? <Loader2 className="spin" size={17} /> : editingId ? <Save size={17} /> : <Plus size={17} />}
-                {editingId ? 'Save Changes' : 'Create User'}
+                {loading ? (
+                  <Loader2 className="spin" size={17} />
+                ) : editingId ? (
+                  <Save size={17} />
+                ) : (
+                  <Plus size={17} />
+                )}
+                {editingId ? "Save Changes" : "Create User"}
               </button>
-              {editingId && <button type="button" className="ghost-management-btn" onClick={resetForm}>Cancel</button>}
+              {editingId && (
+                <button
+                  type="button"
+                  className="ghost-management-btn"
+                  onClick={resetForm}
+                >
+                  Cancel
+                </button>
+              )}
             </div>
             {message && <div className="management-success">{message}</div>}
             {error && <div className="login-error">{error}</div>}
@@ -220,6 +302,7 @@ export default function UserManagement() {
               <div className="users-table-head">
                 <span>Name</span>
                 <span>Username</span>
+                <span>Sales Person</span>
                 <span>Status</span>
                 <span>Actions</span>
               </div>
@@ -227,20 +310,38 @@ export default function UserManagement() {
                 <div className="users-table-row" key={user.id}>
                   <span>{user.name}</span>
                   <span>{user.username}</span>
-                  <span className={user.isActive ? 'status-active' : 'status-inactive'}>
-                    {user.isActive ? 'Active' : 'Inactive'}
+
+                  <span className="sales-person-cell">
+                    {user.salesPersonMobile ||
+                      user.salespersonMobile ||
+                      user.salesPersonPhone ||
+                      "—"}
+                  </span>
+
+                  <span
+                    className={
+                      user.isActive ? "status-active" : "status-inactive"
+                    }
+                  >
+                    {user.isActive ? "Active" : "Inactive"}
                   </span>
                   <span className="user-actions">
                     <button type="button" onClick={() => editUser(user)}>
                       <Pencil size={15} /> Edit
                     </button>
-                    <button type="button" className="danger-small" onClick={() => deactivateUser(user.id)}>
+                    <button
+                      type="button"
+                      className="danger-small"
+                      onClick={() => deactivateUser(user.id)}
+                    >
                       <Trash2 size={15} /> Disable
                     </button>
                   </span>
                 </div>
               ))}
-              {!users.length && <div className="empty-users">No users created yet.</div>}
+              {!users.length && (
+                <div className="empty-users">No users created yet.</div>
+              )}
             </div>
           </div>
         </div>
