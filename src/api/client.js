@@ -29,9 +29,9 @@ export function clearStoredAuth() {
 }
 
 export const PRODUCT_CATEGORIES = [
-  { id: 'louvers', label: 'Louvers', companyName: 'Orange Profile', categoryName: 'Louvers', hasBatches: true },
-  { id: 'paintable', label: 'Paintable', companyName: 'Orange Profile', categoryName: 'Paintable', hasBatches: false },
-  { id: 'asa_sheet', label: 'ASA Sheet', companyName: 'Orange Profile', categoryName: 'ASA Sheet', hasBatches: false },
+  { id: 'louvers', label: 'Louvers', companyName: 'Orange Profile (26-27)', categoryName: 'Louvers', hasBatches: true },
+  { id: 'paintable', label: 'Paintable', companyName: 'Orange Profile (26-27)', categoryName: 'Paintable', hasBatches: false },
+  { id: 'asa_sheet', label: 'ASA Sheet', companyName: 'Orange Profile (26-27)', categoryName: 'ASA Sheet', hasBatches: false },
   { id: 'laminate_sheet', label: 'Laminate Sheet', companyName: 'Best Moulding', categoryName: 'Laminate Sheet', hasBatches: false },
   { id: 'acrylic_sheet', label: 'Acrylic Sheet', companyName: 'Best Moulding', categoryName: 'Acrylic Sheet', hasBatches: false },
 ];
