@@ -290,12 +290,38 @@ function formatQty(value) {
 function resultIsAvailable(item) {
   return item?.available === true;
 }
+function resultTitle(item = {}) {
+  const code = String(item.displayCode || item.productCode || "").trim();
 
+  const rawText = String(
+    item.displayMeta ||
+      item.productCode ||
+      item.normalizedCode ||
+      item.tallyStockName ||
+      "",
+  ).toUpperCase();
+
+  let meta = String(item.displayMeta || "").trim();
+
+  if (!meta) {
+    if (/9\.5\s*FT|95FT/i.test(rawText)) {
+      meta = "9.5 FT";
+    } else if (
+      /\b8\s*FT\b|8FT/i.test(rawText) ||
+      /^8\d{3}/.test(rawText.replace(/[^A-Z0-9]/g, ""))
+    ) {
+      meta = "8 FT";
+    }
+  }
+
+  return meta ? `${code} (${meta})` : code;
+}
 function buildCsv(results = []) {
   const rows = [
     ["Item Code", "Required Qty", "Available Qty", "Status"],
     ...results.map((item) => [
-      item.displayCode || item.productCode || "",
+      // item.displayCode || item.productCode || "",
+      resultTitle(item),
       item.requestedQty || "",
       item.stockQty ?? "",
       item.available
@@ -1172,13 +1198,14 @@ export default function BulkOrder({ onFastCheck, authUser }) {
                 <CheckCircle2 size={20} /> Available Items (
                 {availableResults.length})
               </h3>
+
               {availableResults.length ? (
                 availableResults.map((item) => (
                   <div
                     className="result-row"
                     key={item.productCode || item.displayCode}
                   >
-                    <strong>{item.displayCode || item.productCode}</strong>
+                    <strong>{resultTitle(item)}</strong>
                     <span>Required: {item.requestedQty} PCS</span>
                     <small>
                       Current: {item.stockQty || item.requestedQty}{" "}
@@ -1202,7 +1229,7 @@ export default function BulkOrder({ onFastCheck, authUser }) {
                     className="result-row"
                     key={item.productCode || item.displayCode}
                   >
-                    <strong>{item.displayCode || item.productCode}</strong>
+                    <strong>{resultTitle(item)}</strong>
                     <span>Required: {item.requestedQty} PCS</span>
                     <small>
                       Current: {item.stockQty || 0} {item.stockUnit || "PCS"}
