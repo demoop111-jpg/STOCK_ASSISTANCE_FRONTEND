@@ -84,7 +84,7 @@ export default function App() {
   }
 
   if (!authUser) {
-    // return <LoginPage onLogin={setAuthUser} />;
+    return <LoginPage onLogin={setAuthUser} />;
   }
 
   return (
