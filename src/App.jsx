@@ -32,7 +32,7 @@ export default function App() {
     window.location.pathname.replace(/\/+$/, "") === "/user-management";
 
   useEffect(() => {
-    preloadBulkCatalog().catch(() => {});
+    preloadBulkCatalog().catch(() => { });
 
     if (getCurrentUser()) {
       fetchCurrentUser()
@@ -84,7 +84,7 @@ export default function App() {
   }
 
   if (!authUser) {
-    return <LoginPage onLogin={setAuthUser} />;
+    // return <LoginPage onLogin={setAuthUser} />;
   }
 
   return (
