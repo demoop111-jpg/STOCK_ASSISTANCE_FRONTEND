@@ -6,7 +6,7 @@ const AUTH_KEY = 'stockfinder_auth';
 
 export function getStoredAuth() {
   try {
-    return JSON.parse(localStorage.getItem(AUTH_KEY) || 'null');
+    // return JSON.parse(localStorage.getItem(AUTH_KEY) || 'null');
   } catch (error) {
     return null;
   }
